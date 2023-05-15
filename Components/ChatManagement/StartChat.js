@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const StartChat = ({ navigation }) => {
+const StartChat = ({ navigation, onCloseStartChat, fetchChats }) => {
   const [chatName, setChatName] = useState('');
 
   const handleStartChat = async () => {
@@ -24,9 +24,11 @@ const StartChat = ({ navigation }) => {
         const { chat_id } = await response.json();
         console.log('Chat created successfully');
         // Store the chat ID using AsyncStorage
-        await AsyncStorage.setItem('chat_id', chat_id.toString());
+        await AsyncStorage.setItem('chat_id', chat_id);
         console.log('Chat ID stored:', chat_id);
-        navigation.navigate('ChatDetails');
+        onCloseStartChat();
+        fetchChats();
+        //navigation.navigate('ChatWindow');
       } else {
         // Handle other response statuses as needed
         console.log('Failed to create chat');
@@ -38,7 +40,6 @@ const StartChat = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Start a Chat</Text>
       <TextInput
         style={styles.input}
         placeholder="Chat Name"
@@ -67,12 +68,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 40,
     borderWidth: 1,
-    borderColor: 'gray',
     marginBottom: 8,
     paddingLeft: 8,
+    color: 'black',
+    borderColor: '#7FFFD4',
   },
   button: {
-    backgroundColor: 'blue',
+    backgroundColor: '#5F9E8F',
     padding: 10,
     borderRadius: 4,
     marginTop: 16,

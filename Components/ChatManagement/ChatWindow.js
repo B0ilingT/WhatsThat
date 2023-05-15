@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from 'react-native-screens/native-stack';
 
 const ChatWindow = () => {
   const [chatData, setChatData] = useState(null);
+  const [messageText, setMessageText] = useState('');
 
   useEffect(() => {
     fetchChatData();
@@ -13,7 +14,8 @@ const ChatWindow = () => {
   const fetchChatData = async () => {
     try {
       const sessionToken = await AsyncStorage.getItem('session_token');
-      const response = await fetch('http://localhost:3333/api/1.0.0/chat/1', {
+      const chatId = await AsyncStorage.getItem('chat_id');
+      const response = await fetch(`http://localhost:3333/api/1.0.0/chat/${chatId}`, {
         headers: {
           'Content-Type': 'application/json',
           'X-Authorization': sessionToken,
@@ -31,6 +33,13 @@ const ChatWindow = () => {
     }
   };
 
+  const handleSendMessage = () => {
+    // Implement your logic to send the message
+    console.log('Sending message:', messageText);
+    // Reset the message input field
+    setMessageText('');
+  };
+
   if (!chatData) {
     return (
       <View style={styles.loadingContainer}>
@@ -42,7 +51,11 @@ const ChatWindow = () => {
   const { name, creator, members, messages } = chatData;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
       <Text style={styles.chatName}>{name}</Text>
 
       <View style={styles.messageContainer}>
@@ -53,7 +66,17 @@ const ChatWindow = () => {
           </View>
         ))}
       </View>
-    </View>
+
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          value={messageText}
+          onChangeText={setMessageText}
+        />
+        <Button title="Send" onPress={handleSendMessage} />
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 

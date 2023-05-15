@@ -9,6 +9,7 @@ import LoginComponent from './Components/UserManagement/LoginComponent';
 import Chats from './Components/ChatManagement/Chats';
 import Contacts from './Components/ContactsManagement/Contacts';
 import Profile from './Components/UserManagement/Profile';
+import AddContact from './Components/ContactsManagement/AddContact'
 //import ChatWindow from './Components/ChatManagement/ChatWindow';
 
 const Stack = createNativeStackNavigator();
@@ -26,18 +27,32 @@ const App = () => {
                 onPress={() => navigation.navigate('Signup')}
                 style={styles.signupLink}
               >
-                <Text>Don't have an account? Sign up here</Text>
+                <Text style={styles.signupLinkText}>Don't have an account? Sign up here</Text>
               </TouchableOpacity>
             ),
             screenProps: { navigation },
+            headerStyle: {
+              backgroundColor: '#5F9E8F',
+            },
+            headerTintColor: '#FFFFFF',
           })}
         />
-        <Stack.Screen name="Contacts" component={Contacts} />
+        <Stack.Screen name="Contacts" component={Contacts} options={{ headerShown: false }} />
+        <Stack.Screen name="Search" component={AddContact} />
         <Stack.Screen name="Profile" component={Profile} />
-        <Stack.Screen name="Signup" component={SignupComponent} />
+        <Stack.Screen
+          name="Signup"
+          component={SignupComponent}
+          options={{
+            headerStyle: {
+              backgroundColor: '#5F9E8F',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
         <Stack.Screen name="Chats" component={Chats} options={{ headerShown: false }} />
-        {/* <Stack.Screen name="ChatWindow" component={ChatWindow} /> {/*Add the ChatWindow screen */}
-      </Stack.Navigator> 
+        {/* <Stack.Screen name="ChatWindow" component={ChatWindow}/>  */}
+      </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>
   );
@@ -46,6 +61,10 @@ const App = () => {
 const styles = StyleSheet.create({
   signupLink: {
     marginRight: 16,
+
+  },
+  signupLinkText: {
+    color: 'white',
   },
 });
 

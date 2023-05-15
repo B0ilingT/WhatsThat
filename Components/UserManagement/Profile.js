@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import GetProfilePhoto from './GetProfilePhoto';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
@@ -20,13 +21,13 @@ const Profile = () => {
     try {
       const sessionToken = await AsyncStorage.getItem('session_token');
       const userId = await AsyncStorage.getItem('user_id');
-  
+
       const response = await fetch(`http://localhost:3333/api/1.0.0/user/${userId}`, {
         headers: {
           'X-Authorization': sessionToken,
         },
       });
-  
+
       if (response.status === 200) {
         const data = await response.json();
         setUserData(data);
@@ -45,19 +46,19 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       const sessionToken = await AsyncStorage.getItem('session_token');
-  
+
       if (!sessionToken) {
         console.log('No session token found. Unable to logout.');
         return;
       }
-  
+
       const response = await fetch('http://localhost:3333/api/1.0.0/logout', {
         method: 'POST',
         headers: {
           'X-Authorization': sessionToken,
         },
       });
-  
+
       if (response.status === 200) {
         console.log('Logout successful');
         await AsyncStorage.removeItem('session_token');
@@ -75,7 +76,7 @@ const Profile = () => {
     try {
       const sessionToken = await AsyncStorage.getItem('session_token');
       const userId = await AsyncStorage.getItem('user_id');
-  
+
       const response = await fetch(`http://localhost:3333/api/1.0.0/user/${userId}`, {
         method: 'PATCH',
         headers: {
@@ -89,7 +90,7 @@ const Profile = () => {
           password: updatedPassword,
         }),
       });
-  
+
       if (response.status === 200 || response.statusText === 'OK') {
         console.log('User info updated successfully');
         setEditing(false);
@@ -122,17 +123,25 @@ const Profile = () => {
   }
 
   const { first_name, last_name, email: userEmail } = userData;
-  
+
   return (
     <View style={styles.container}>
-       {showSuccessMessage && (
-      <Animated.View style={[styles.successMessage, { opacity: fadeAnimation }]}>
-        <Text style={styles.successMessageText}>Details Updated</Text>
-      </Animated.View>
-    )}
-      <TouchableOpacity style={styles.editButton} onPress={() => setEditing(true)}>
-        <Text style={styles.editButtonText}>✎</Text>
-      </TouchableOpacity>
+      {showSuccessMessage && (
+        <Animated.View style={[styles.successMessage, { opacity: fadeAnimation }]}>
+          <Text style={styles.successMessageText}>Details Updated</Text>
+        </Animated.View>
+      )}
+      <View>       
+        <View style={styles.container}>
+          <View style={styles.photoContainer}>
+            <GetProfilePhoto />
+          </View>
+          {/* <Text style={styles.fullName}>{first_name} {last_name}</Text> */}
+        </View>
+        <TouchableOpacity style={styles.editButton} onPress={() => setEditing(true)}>
+          <Text style={styles.editButtonText}>✎</Text>
+        </TouchableOpacity>
+      </View>  
       {editing ? (
         <>
           <Text style={styles.label}>First Name:</Text>
@@ -178,87 +187,96 @@ const Profile = () => {
       )}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+      </TouchableOpacity>     
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 16,
-      backgroundColor: '#fff',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    editButton: {
-      position: 'absolute',
-      top: 16,
-      right: 16,
-      padding: 8,
-    },
-    editButtonText: {
-      fontSize: 24,
-      fontWeight: 'bold',
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 16,
-    },
-    label: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      marginBottom: 8,
-    },
-    value: {
-      fontSize: 16,
-      marginBottom: 16,
-    },
-    input: {
-      height: 40,
-      borderColor: 'gray',
-      borderWidth: 1,
-      marginBottom: 16,
-      paddingHorizontal: 8,
-    },
-    saveButton: {
-      backgroundColor: 'blue',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      marginBottom: 16,
-    },
-    saveButtonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
-    logoutButton: {
-      backgroundColor: 'red',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-    },
-    logoutButtonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
-    successMessage: {
-        backgroundColor: 'green',
-        padding: 8,
-        marginTop: 16,
-        borderRadius: 4,
-      }, 
-        successMessageText: {
-            color: 'white',
-            textAlign: 'center',
-            fontWeight: 'bold',
-          },
-  });
-  
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#7FFFD4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  editButton: {
+    position: 'relative',
+    right: 1,
+    padding: 8,
+  },
+  editButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    transform: [{ scaleX: -1 }],
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  value: {
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  saveButton: {
+    backgroundColor: '#7FFFD4',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  logoutButton: {
+    backgroundColor: '#00637C',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  successMessage: {
+    backgroundColor: '#7FFFD4',
+    padding: 8,
+    marginTop: 16,
+    borderRadius: 4,
+  },
+  successMessageText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  }, 
+});
+
 
 export default Profile;
