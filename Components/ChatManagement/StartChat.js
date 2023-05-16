@@ -28,7 +28,7 @@ const StartChat = ({ navigation, onCloseStartChat, fetchChats }) => {
         console.log('Chat ID stored:', chat_id);
         onCloseStartChat();
         fetchChats();
-        //navigation.navigate('ChatWindow');
+        navigation.navigate('ChatWindow',  { chatId: chat_id });
       } else {
         // Handle other response statuses as needed
         console.log('Failed to create chat');

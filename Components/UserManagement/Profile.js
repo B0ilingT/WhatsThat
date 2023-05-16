@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated } from 'r
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GetProfilePhoto from './GetProfilePhoto';
 
-const Profile = () => {
+const Profile = ({navigation}) => {
   const [userData, setUserData] = useState(null);
   const [updatedFirstName, setUpdatedFirstName] = useState('');
   const [updatedLastName, setUpdatedLastName] = useState('');
@@ -126,6 +126,14 @@ const Profile = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.viewBlockedContainer}>
+        <TouchableOpacity
+          style={styles.viewBlockedButton}
+          onPress={() => navigation.navigate("Blocked")}
+        >
+          <Text style={styles.viewBlockedButtonText}>View Blocked Contacts</Text>
+        </TouchableOpacity>
+      </View>
       {showSuccessMessage && (
         <Animated.View style={[styles.successMessage, { opacity: fadeAnimation }]}>
           <Text style={styles.successMessageText}>Details Updated</Text>
@@ -187,7 +195,7 @@ const Profile = () => {
       )}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>     
+      </TouchableOpacity>          
     </View>
   );
 };
@@ -276,6 +284,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   }, 
+  viewBlockedContainer: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  viewBlockedButton: {
+    backgroundColor: '#7FFFD4',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  viewBlockedButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });
 
 

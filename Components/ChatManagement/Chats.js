@@ -35,9 +35,14 @@ const Chats = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const handleChatPress = (chat) => {
-    // Handle chat item press, navigate to chat details or perform any other action
+  const handleChatNameUpdate = () => {
+    fetchChats();
   };
+
+  const handleChatPress = (chat) => {
+    navigation.navigate('ChatWindow', { chatId: chat.chat_id, onChatNameUpdate: handleChatNameUpdate });
+  };
+  
 
   const handleCloseStartChat = () => {
     setShowStartChat(false);
@@ -53,7 +58,7 @@ const Chats = ({ navigation }) => {
               <Text style={styles.closeButton}>X</Text>              
             </TouchableOpacity>
           </View>
-          <StartChat onCloseStartChat={handleCloseStartChat} fetchChats={fetchChats}/>
+          <StartChat onCloseStartChat={handleCloseStartChat} fetchChats={fetchChats} navigation={navigation} />
         </View>
       )}
       <View style={styles.content}>
@@ -61,7 +66,7 @@ const Chats = ({ navigation }) => {
           <FlatList
             data={chats}
             renderItem={renderChatItem}
-            keyExtractor={(item) => item.chat_id.toString()}
+            keyExtractor={(item) => item.chat_id}
             contentContainerStyle={styles.chatsContainer}
             showsVerticalScrollIndicator={false}
           />

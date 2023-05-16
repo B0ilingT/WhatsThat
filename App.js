@@ -10,7 +10,9 @@ import Chats from './Components/ChatManagement/Chats';
 import Contacts from './Components/ContactsManagement/Contacts';
 import Profile from './Components/UserManagement/Profile';
 import AddContact from './Components/ContactsManagement/AddContact'
-//import ChatWindow from './Components/ChatManagement/ChatWindow';
+import ViewBlocked from './Components/ContactsManagement/ViewBlocked';
+import ChatWindow from './Components/ChatManagement/ChatWindow';
+import ChatUserManagement from './Components/ChatManagement/ChatUserManagement';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +41,7 @@ const App = () => {
         />
         <Stack.Screen name="Contacts" component={Contacts} options={{ headerShown: false }} />
         <Stack.Screen name="Search" component={AddContact} />
+        <Stack.Screen name="Blocked" component={ViewBlocked} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen
           name="Signup"
@@ -51,7 +54,8 @@ const App = () => {
           }}
         />
         <Stack.Screen name="Chats" component={Chats} options={{ headerShown: false }} />
-        {/* <Stack.Screen name="ChatWindow" component={ChatWindow}/>  */}
+        <Stack.Screen name="ChatUserManagement" component={ChatUserManagement} />
+        <Stack.Screen name="ChatWindow" component={ChatWindow} options={{ headerShown: false }}/> 
       </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>

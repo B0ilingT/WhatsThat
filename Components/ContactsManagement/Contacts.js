@@ -4,12 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Contacts = ({ navigation }) => {
-  const [contactData, setContactData] = useState(null);
+  const [contactData, setContactData] = useState([]);
   const [searchText, setSearchText] = useState('');
 
+
   useEffect(() => {
-    fetchContactData();
-  }, []);
+    fetchContactData(); //flashing error
+  },[]);
 
   const fetchContactData = async () => {
     try {
@@ -24,6 +25,7 @@ const Contacts = ({ navigation }) => {
       if (response.status === 200) {
         const data = await response.json();
         setContactData(data);
+        fetchBlockedContacts();
       } else {
         console.log('Failed to fetch contact data');
       }
@@ -31,6 +33,40 @@ const Contacts = ({ navigation }) => {
       console.error('Error occurred:', error);
     }
   };
+
+  const fetchBlockedContacts = async () => {
+    try {
+      const sessionToken = await AsyncStorage.getItem('session_token');
+      const response = await fetch('http://localhost:3333/api/1.0.0/blocked', {
+        headers: {
+          'X-Authorization': sessionToken,
+        },
+      });
+
+      if (response.status === 200) {
+        const blockedContacts = await response.json();
+
+        const newArray = contactData.filter(item => !blockedContacts.includes(item)).concat(blockedContacts.filter(item => !contactData.includes(item)));
+
+        console.log(newArray);
+        setContactData(newArray);
+      } else {
+        console.log('Failed to fetch blocked contacts');
+      }
+    } catch (error) {
+      console.error('Error occurred:', error);
+    }
+  };
+
+  // const filterBlockedContacts = (contacts, blockedContacts) => {
+  //   const filteredContacts = contacts.filter((contact) => {
+  //     const isBlocked = blockedContacts.some((blockedContact) => blockedContact.user_id === contact.user_id);
+  //     return !isBlocked;
+  //   });
+
+  //   setContactData(filteredContacts);
+  // };
+
 
   const handleSearch = async () => {
     try {
@@ -118,7 +154,7 @@ const Contacts = ({ navigation }) => {
 
       if (response.status === 200) {
         console.log('Contact blocked successfully');
-        handleRemoveContact(userId);
+        //handleRemoveContact(userId);
       } else if (response.status === 400) {
         console.log("You can't block yourself");
       } else if (response.status === 401) {
@@ -132,6 +168,14 @@ const Contacts = ({ navigation }) => {
       console.error('Error occurred:', error);
     }
   };
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Fetch chat data when the component is re-rendered
+      fetchContactData();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   if (!contactData) {
     return (
@@ -334,7 +378,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
 });
 
 
