@@ -54,7 +54,7 @@ const App = () => {
           }}
         />
         <Stack.Screen name="Chats" component={Chats} options={{ headerShown: false }} />
-        <Stack.Screen name="ChatUserManagement" component={ChatUserManagement} />
+        <Stack.Screen name="ChatUserManagement" component={ChatUserManagement} options={{ headerShown: false }} />
         <Stack.Screen name="ChatWindow" component={ChatWindow} options={{ headerShown: false }}/> 
       </Stack.Navigator>
       <StatusBar style="auto" />

@@ -213,7 +213,7 @@ const Contacts = ({ navigation }) => {
         </TouchableOpacity>
         {contactData.length > 0 && (
           <TouchableOpacity style={styles.addButton} onPress={navigateToAddContact}>
-            <Icon name="plus" size={20} color="white" />
+            <Icon name="user-plus" size={20} color="white" />
           </TouchableOpacity>
         )}
       </View>

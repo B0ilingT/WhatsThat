@@ -95,11 +95,11 @@ const AddContact = ({ }) => {
             <Text style={styles.contactName}>{`${item.first_name} ${item.last_name}`}</Text>
             <Text style={styles.contactEmail}>{item.email}</Text>
             <TouchableOpacity style={styles.addButton} onPress={() => handleAddContact(item.id)}>
-              <Icon name="plus" size={20} color="white" />
+              <Icon name="user-plus" size={20} color="white" />
             </TouchableOpacity>
           </TouchableOpacity>
         )}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id}
       />
     </View>
   );
