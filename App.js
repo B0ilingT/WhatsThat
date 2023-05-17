@@ -13,7 +13,7 @@ import AddContact from './Components/ContactsManagement/AddContact'
 import ViewBlocked from './Components/ContactsManagement/ViewBlocked';
 import ChatWindow from './Components/ChatManagement/ChatWindow';
 import ChatUserManagement from './Components/ChatManagement/ChatUserManagement';
-
+import ScheduleMessage from './Components/ChatManagement/ScheduleMessage';
 const Stack = createNativeStackNavigator();
 
 const App = () => {
@@ -42,6 +42,7 @@ const App = () => {
         <Stack.Screen name="Contacts" component={Contacts} options={{ headerShown: false }} />
         <Stack.Screen name="Search" component={AddContact} />
         <Stack.Screen name="Blocked" component={ViewBlocked} />
+        <Stack.Screen name="ScheduleMessage" component={ScheduleMessage} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen
           name="Signup"
