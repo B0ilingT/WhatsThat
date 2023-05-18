@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, FlatList, Button, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -68,7 +68,6 @@ const ChatUserManagement = ({ navigation }) => {
 
       if (response.status === 200) {
         console.log('User added to chat successfully');
-        // Perform any additional actions or updates after adding the user to the chat
       } else if (response.status === 400) {
         console.log("You can't add yourself to the chat");
       } else if (response.status === 401) {
@@ -137,14 +136,14 @@ const ChatUserManagement = ({ navigation }) => {
     try {
       const sessionToken = await AsyncStorage.getItem('session_token');
       const url = `http://localhost:3333/api/1.0.0/chat/${chatId}/user/${userId}`;
-  
+
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'X-Authorization': sessionToken,
         },
       });
-  
+
       if (response.status === 200) {
         console.log('User removed from chat successfully');
         fetchMemberData();
@@ -170,7 +169,7 @@ const ChatUserManagement = ({ navigation }) => {
         <View style={styles.headerMembers}>
           <TouchableOpacity style={styles.backButton} onPress={() => setShowMembers(false)}>
             <Feather name="arrow-left" size={24} color="white" />
-          </TouchableOpacity>      
+          </TouchableOpacity>
         </View>
         <FlatList
           data={members}
@@ -197,7 +196,7 @@ const ChatUserManagement = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="white" />
-        </TouchableOpacity>      
+        </TouchableOpacity>
       </View>
       <View style={styles.searchContainer}>
         <TextInput
@@ -213,7 +212,7 @@ const ChatUserManagement = ({ navigation }) => {
           <Text style={styles.buttonText}>View Members</Text>
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
         data={contactData}
         renderItem={renderContactItem}
@@ -247,7 +246,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    borderColor:'#5F9E8F',
+    borderColor: '#5F9E8F',
     marginLeft: 8,
   },
   buttonText: {
@@ -344,12 +343,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chatNameText: {
-    color:"white",
+    color: "white",
     fontSize: 18,
     fontWeight: 'bold',
   },
   chatNameInput: {
-    color:"white",
+    color: "white",
     fontSize: 18,
     fontWeight: 'bold',
     borderColor: '#7FFFD4',

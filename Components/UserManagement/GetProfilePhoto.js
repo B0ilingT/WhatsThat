@@ -2,47 +2,59 @@ import React, { useEffect, useState } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-//const defaultPhotoUri = 'Pictures\DefaultPicture.png';
 const GetProfilePhoto = () => {
-  const [photoUri, setPhotoUri] = useState('');
+  const [photo, setPhoto] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   useEffect(() => {
-    fetchProfilePhoto();
+    getProfileImage();
   }, []);
-
-  const fetchProfilePhoto = async () => {
+  
+  const getProfileImage = async () => {
     try {
       const sessionToken = await AsyncStorage.getItem('session_token');
-      const userId = await AsyncStorage.getItem('user_id');
-
-      const response = await fetch(`http://localhost:3333/api/1.0.0/user/${userId}/photo`, {
+      const user_id = await AsyncStorage.getItem('user_id');
+      const response = await fetch(`http://localhost:3333/api/1.0.0/user/${user_id}/photo`, {
+        method: "GET",
         headers: {
-          'X-Authorization': sessionToken,
-        },
+          "X-Authorization": sessionToken
+        }
       });
 
       if (response.status === 200) {
-        const photoData = await response.json();
-        setPhotoUri(photoData.photo_url);
+        const resBlob = await response.blob();
+        const data = URL.createObjectURL(resBlob);
+        setPhoto(data);
+        setIsLoading(false);
+      } else if (response.status === 401) {
+        console.log("Unauthorized");
+      } else if (response.status === 404) {
+        console.log("Not Found");
+      } else if (response.status === 500) {
+        console.log("Server Error");
       } else {
-        console.log('Failed to retrieve profile photo');
-        <Image source={require('./assets/default.png')} style={styles.photo}/>
-        // Handle other response statuses as needed
+        console.log("Error:", response.status);
       }
     } catch (error) {
-      console.error('Error occurred:', error);
-      // Handle error
+      console.log(error);
     }
   };
-  
 
   return (
-    <View style={styles.container}>
-      {/* {photoUri ? ( */}
-        <Image source={{ uri: photoUri }} style={styles.photo} />
-      {/* ) : ( */}
-        {/* // />
-      )} */}
+    <View style={{ flex: 1 }}>
+      <Image
+        source={{
+          uri: photo
+        }}
+        style={{
+          width: 145,
+          height: 145,
+          borderRadius: 75,
+          alignSelf: 'center',
+          marginTop: 2.5,
+        }}
+      />
     </View>
   );
 };
@@ -51,11 +63,6 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  photo: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
   },
 });
 

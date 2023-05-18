@@ -1,139 +1,132 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { Camera, CameraType, onCameraReady, CameraPictureOptions, blob } from 'expo-camera';
+import { useState, useEffect } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome } from '@expo/vector-icons';
 
-const PhotoUploader = () => {
-  const [userId, setUserId] = useState(null);
-  const [sessionToken, setSessionToken] = useState(null);
-  const [photoUri, setPhotoUri] = useState(null);
+const PhotoUploader = ({ navigation }) => {
+  const [type, setType] = useState(CameraType.back);
+  const [permission, setHasPermission] = Camera.useCameraPermissions();
+  const [camera, setCamera] = useState(null);
+
+  function toggleCameraType() {
+    setType(current => (current === CameraType.back ? CameraType.front : CameraType.back));
+    console.log("Camera: ", type)
+  }
 
   useEffect(() => {
-    fetchUserData();
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
   }, []);
 
-  const fetchUserData = async () => {
-    try {
-      const userId = await AsyncStorage.getItem('userId');
-      const sessionToken = await AsyncStorage.getItem('sessionToken');
-      setUserId(userId);
-      setSessionToken(sessionToken);
-    } catch (error) {
-      console.error('Error retrieving user data:', error);
+  async function takePhoto() {
+    if (camera) {
+      const options = {
+        quality: 0.5,
+        base64: true,
+        onPictureSaved: (data) => sendToServer(data),
+      };
+      const photoData = await camera.takePictureAsync(options);
+      sendToServer(photoData);
     }
-  };
+  }
 
-  const storeUserData = async (userId, sessionToken) => {
-    try {
-      await AsyncStorage.setItem('userId', userId);
-      await AsyncStorage.setItem('sessionToken', sessionToken);
-    } catch (error) {
-      console.error('Error storing user data:', error);
-    }
-  };
+  async function sendToServer(data) {
+    const id = await AsyncStorage.getItem('user_id');
+    const token = await AsyncStorage.getItem('session_token');
+    let res = await fetch(data.uri);
+    let blob = await res.blob();
 
-  const openCamera = () => {
-    launchCamera({ mediaType: 'photo' }, handleImageUpload);
-  };
+    console.log(id);
 
-  const openImageGallery = () => {
-    launchImageLibrary({ mediaType: 'photo' }, handleImageUpload);
-  };
-
-  const handleImageUpload = (response) => {
-    if (response.didCancel) {
-      // User cancelled the image selection
-      console.log('Image selection cancelled');
-    } else if (response.error) {
-      // Error occurred during image selection
-      console.log('Image selection error:', response.error);
-    } else {
-      // Image selected successfully, upload it
-      const source = { uri: response.uri };
-      setPhotoUri(response.uri);
-      uploadPhoto(response.uri, response.type);
-    }
-  };
-
-  const uploadPhoto = async () => {
-    try {
-      const sessionToken = await AsyncStorage.getItem('session_token');
-      const userId = await AsyncStorage.getItem('user_id');
-  
-      const imagePickerResponse = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-      });
-  
-      if (!imagePickerResponse.cancelled) {
-        const uri = imagePickerResponse.uri;
-        const uriParts = uri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
-  
-        const formData = new FormData();
-        formData.append('photo', {
-          uri,
-          name: `photo.${fileType}`,
-          type: `image/${fileType}`,
-        });
-  
-        const response = await fetch(`http://localhost:3333/api/1.0.0/user/${userId}/photo`, {
-          method: 'POST',
-          headers: {
-            'X-Authorization': sessionToken,
-            'Content-Type': 'multipart/form-data',
-          },
-          body: formData,
-        });
-  
+    return fetch(`http://localhost:3333/api/1.0.0/user/${id}/photo`, {
+      method: 'POST',
+      headers: {
+        'X-Authorization': token,
+        'Content-Type': 'image/jpeg',
+      },
+      body: blob,
+    })
+      .then((response) => {
         if (response.status === 200) {
-          console.log('Photo uploaded successfully');
-          // Handle success response
+          console.log('Image updated');
         } else {
-          console.log('Failed to upload photo');
-          // Handle other response statuses as needed
+          throw 'Something happened';
         }
-      }
-    } catch (error) {
-      console.error('Error occurred:', error);
-      // Handle error
-    }
-  };
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={openCamera}>
-        <Text style={styles.buttonText}>Open Camera</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={openImageGallery}>
-        <Text style={styles.buttonText}>Open Image Gallery</Text>
-      </TouchableOpacity>
-      {photoUri && <Image source={{ uri: photoUri }} style={styles.photo} />}
-    </View>
-  );
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+
+  if (!permission || !permission.granted) {
+    return (<Text>No access to camera</Text>)
+  } else {
+    return (
+      <View style={styles.container}>
+        <Camera style={styles.camera} type={type} ref={ref => setCamera(ref)}>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.transparentButton} onPress={toggleCameraType}>
+              <FontAwesome name="refresh" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.shutterContainer}>
+            <TouchableOpacity style={styles.shutterButton} onPress={takePhoto}>
+              <FontAwesome name="camera" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </Camera>
+      </View>
+    );
+  }
+
+
+
 };
+
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    button: {
-      backgroundColor: '#5F9E8F',
-      padding: 10,
-      borderRadius: 4,
-      marginTop: 16,
-    },
-    buttonText: {
-      color: 'white',
-      textAlign: 'center',
-      fontWeight: 'bold',
-    },
-    photo: {
-      width: 200,
-      height: 200,
-      marginTop: 16,
-    },
-  });
-  
-  export default ProfilePhotoUploader;
+  container: {
+    flex: 1
+  },
+  buttonContainer: {
+    alignSelf: 'flex-end',
+    padding: 5,
+    margin: 5,
+  },
+  button: {
+    width: '100%',
+    height: '100%'
+  },
+  text: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ddd'
+  },
+  transparentButton: {
+    padding: 10,
+  },
+  shutterContainer: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+  },
+  shutterButton: {
+    padding: 20,
+    backgroundColor: 'transparent',
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+
+});
+
+export default PhotoUploader;
+
+
+
+
+

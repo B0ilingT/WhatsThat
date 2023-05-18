@@ -9,20 +9,24 @@ const ChatWindow = ({ navigation }) => {
   const [inputText, setInputText] = useState('');
   const route = useRoute();
   const { chatId } = route.params;
+  const { userId } = route.params;
   const { onChatNameUpdate } = route.params;
   const [editing, setEditing] = useState(false);
   const [editedChatName, setEditedChatName] = useState('');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [userMessages, setUserMessages] = useState([]);
+  const [exMessages, setExMessages] = useState([]);
   const [draftMessage, setDraftMessage] = useState('');
   const scrollViewRef = useRef(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [showMessageActions, setShowMessageActions] = useState(false);
+  //const [userId, setUserId] = useState(null);
+
 
   useEffect(() => {
-    fetchChatData();
+    fetchInitialChatData();  
     loadDraftMessage();
-    scrollToBottom();
   }, []);
 
   const scrollToBottom = () => {
@@ -43,9 +47,9 @@ const ChatWindow = ({ navigation }) => {
     }
   };
 
-  const fetchChatData = async () => {
+  const fetchInitialChatData = async () => {
     try {
-      console.log('chatId', chatId);
+      console.log('userid',userId);
       const sessionToken = await AsyncStorage.getItem('session_token');
       const response = await fetch(`http://localhost:3333/api/1.0.0/chat/${chatId}`, {
         headers: {
@@ -53,11 +57,58 @@ const ChatWindow = ({ navigation }) => {
         },
       });
       const data = await response.json();
+      console.log('data',data.messages)
+      if (data.messages && data.messages.length > 0) {
+        const {tempUserMessages,tempExMessages} = filterUserMessages(data.messages)
+        console.log('tempUser',tempUserMessages);
+        await setUserMessages(tempUserMessages);
+        await setExMessages(tempExMessages);
+      }
+
       setChatData(data);
-      setMessages(data.messages); // Set the messages state
+      setMessages(data.messages);
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const fetchChatUpdates = async () => {
+    try {
+      const sessionToken = await AsyncStorage.getItem('session_token');
+      const response = await fetch(`http://localhost:3333/api/1.0.0/chat/${chatId}`, {
+        headers: {
+          'X-Authorization': sessionToken,
+        },
+      });
+      const data = await response.json();
+
+      if (data.messages && data.messages.length > 0) {
+        const {tempUserMessages,tempExMessages} =  filterUserMessages(data.messages)
+        console.log('tempUser',tempUserMessages);
+        await setUserMessages(tempUserMessages);
+        await setExMessages(tempExMessages);
+      }
+      setChatData(data);
+      setMessages(data.messages);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const filterUserMessages = (messages) => {
+    const tempUserMessages = [];
+    const tempExMessages = [];
+
+    messages.forEach((message) => {
+      if (message.author && message.author.user_id.toString() === userId.toString()) {
+        tempUserMessages.push(message);         
+      } else {        
+        tempExMessages.push(message);     
+      }
+    });
+    console.log('tUser',tempUserMessages);
+    console.log('external',tempExMessages);
+    return { tempUserMessages, tempExMessages };
   };
 
 
@@ -96,26 +147,10 @@ const ChatWindow = ({ navigation }) => {
         },
         body: JSON.stringify(newMessage),
       });
-
       if (response.status === 200) {
-        const highestMessageId = Math.max(
-          ...chatData.messages.map((message) => message.message_id)
-        );
-        const messageWithId = {
-          ...newMessage,
-          message_id: highestMessageId + 1,
-        };
-        fetchChatData();
+        await fetchChatUpdates();
         console.log('Message sent successfully');
-        // Clear draft message after sending
         clearDraftMessage();
-
-        // Update the UI with the new message
-        setChatData((prevData) => {
-          const updatedData = { ...prevData };
-          updatedData.messages.push(messageWithId);
-          return updatedData;
-        });
         setInputText('');
       } else if (response.status === 400) {
         console.log('Bad Request');
@@ -131,6 +166,7 @@ const ChatWindow = ({ navigation }) => {
     } catch (error) {
       console.error('Error occurred:', error);
     }
+    fetchChatUpdates();
   };
 
   const handleEditChat = async () => {
@@ -149,8 +185,7 @@ const ChatWindow = ({ navigation }) => {
 
       if (response.status === 200) {
         console.log('Chat updated successfully');
-        // Refresh chat data after edit
-        await fetchChatData();
+        
         onChatNameUpdate();
         setEditing(false);
       } else {
@@ -159,6 +194,7 @@ const ChatWindow = ({ navigation }) => {
     } catch (error) {
       console.error(error);
     }
+    fetchChatUpdates();
   };
 
   const handleDeleteMessage = async (messageId) => {
@@ -175,7 +211,7 @@ const ChatWindow = ({ navigation }) => {
 
       if (response.status === 200) {
         console.log('Message deleted successfully');
-        fetchChatData();
+        fetchChatUpdates();
       } else if (response.status === 401) {
         console.log('Unauthorized');
       } else if (response.status === 403) {
@@ -190,6 +226,7 @@ const ChatWindow = ({ navigation }) => {
     } catch (error) {
       console.error('Error occurred:', error);
     }
+    fetchChatUpdates();
   };
 
   const handleUpdateMessage = async (messageId) => {
@@ -210,7 +247,9 @@ const ChatWindow = ({ navigation }) => {
 
       if (response.status === 200) {
         console.log('Message updated successfully');
-        fetchChatData();
+        fetchChatUpdates();
+        clearDraftMessage();
+        setInputText('');
       } else if (response.status === 401) {
         console.log('Unauthorized');
       } else if (response.status === 403) {
@@ -225,24 +264,23 @@ const ChatWindow = ({ navigation }) => {
     } catch (error) {
       console.error('Error occurred:', error);
     }
+
   };
 
   if (!chatData) {
-    return null; // Show loading indicator or other UI while fetching chat data
+    return null;
   }
 
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp * 1000); // Convert timestamp to milliseconds
-    const day = ('0' + date.getDate()).slice(-2); // Get the day of the month (from 1 to 31)
-    const month = ('0' + (date.getMonth() + 1)).slice(-2); // Get the month (from 0 to 11)
-    const hours = ('0' + date.getHours()).slice(-2); // Get the hours (from 0 to 23)
-    const minutes = ('0' + date.getMinutes()).slice(-2); // Get the minutes (from 0 to 59)
+    const date = new Date(timestamp);
+    const day = ('0' + date.getDate()).slice(-2);
+    const month = ('0' + (date.getMonth() + 1)).slice(-2);
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2);
     return `${day}/${month} ${hours}:${minutes}`;
   };
 
-
   return (
-
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -273,29 +311,32 @@ const ChatWindow = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={80} style={styles.chatWindow}>
-        <ScrollView ref={scrollViewRef} onContentSizeChange={scrollToBottom}>
-          <FlatList
-            data={messages.slice().reverse()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={item.user_id !== AsyncStorage.getItem('user_id') ? styles.incomingMessageContainer : styles.outgoingMessageContainer}
-                key={item.message_id}
-                onPress={() => {
-                  setSelectedMessage(item);
-                  setShowMessageActions(true);
-                  console.log(selectedMessage);
-                }}
-              >
-                <Text style={item.user_id !== AsyncStorage.getItem('user_id') ? styles.incomingMessageText : styles.outgoingMessageText}>
-                  {item.message}
-                </Text>
-                <Text style={styles.timestampText}>
-                  {formatTimestamp(item.timestamp)}
-                </Text>
-              </TouchableOpacity>
-            )}
-            keyExtractor={(item) => item.message_id}
-          />
+        <ScrollView ref={scrollViewRef} onContentSizeChange={scrollToBottom} style={styles.scroller}>
+          {exMessages.slice().reverse().map((message, index) => (
+            <TouchableOpacity
+              style={styles.incomingMessageContainer}
+              key={`ex_${message.message_id}_${index}`}
+              onPress={() => {
+              }}
+            >
+              <Text style={styles.incomingMessageAuthor}>{message.author.first_name}</Text>
+              <Text style={styles.incomingMessageText}>{message.message}</Text>
+              <Text style={styles.timestampText}>{formatTimestamp(message.timestamp)}</Text>
+            </TouchableOpacity>
+          ))}
+          {userMessages.slice().reverse().map((message, index) => (
+            <TouchableOpacity
+              style={styles.outgoingMessageContainer}
+              key={`user_${message.message_id}_${index}`}
+              onPress={() => {
+                setSelectedMessage(message);
+                setShowMessageActions(true);
+              }}
+            >
+              <Text style={styles.outgoingMessageText}>{message.message}</Text>
+              <Text style={styles.timestampText}>{formatTimestamp(message.timestamp)}</Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
         <View style={styles.inputContainer}>
           <TextInput
@@ -305,7 +346,7 @@ const ChatWindow = ({ navigation }) => {
               setInputText(text);
               handleDraftMessage(text);
             }}
-            placeholder={setShowMessageActions ? 'Edit Message here...' : 'Please Input your message...'}
+            placeholder='Edit Message here...'
           />
           <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
             <Feather name="mail" size={16} color="white" />
@@ -329,11 +370,7 @@ const ChatWindow = ({ navigation }) => {
         )}
       </KeyboardAvoidingView>
     </View>
-
-
-
   );
-
 }
 const styles = StyleSheet.create({
   container: {
@@ -350,6 +387,10 @@ const styles = StyleSheet.create({
   backButton: {
     marginRight: 12,
   },
+  scroller:{
+    flex: 1,
+  },
+
   headerText: {
     flex: 1,
     color: '#FFFFFF',
@@ -442,11 +483,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   incomingMessageContainer: {
-    backgroundColor: '#DCF8C6',
+    backgroundColor: '#d3d3d3',
     padding: 8,
     marginBottom: 8,
     borderRadius: 8,
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
+    marginLeft: 16,
   },
   incomingMessageText: {
     fontSize: 16,
@@ -455,17 +497,19 @@ const styles = StyleSheet.create({
   incomingMessageAuthor: {
     fontSize: 12,
     color: '#666666',
+    marginBottom: 4,
   },
   outgoingMessageContainer: {
-    backgroundColor: '#5F9E8F',
+    backgroundColor: '#DCF8C6',
     padding: 8,
     marginBottom: 8,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-end',
+    marginRight: 16,
   },
   outgoingMessageText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: 'black',
   },
   scheduleButton: {
     backgroundColor: '#014D4E',

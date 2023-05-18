@@ -20,17 +20,14 @@ const StartChat = ({ navigation, onCloseStartChat, fetchChats }) => {
       });
 
       if (response.status === 201) {
-        // Chat created successfully
         const { chat_id } = await response.json();
         console.log('Chat created successfully');
-        // Store the chat ID using AsyncStorage
         await AsyncStorage.setItem('chat_id', chat_id);
         console.log('Chat ID stored:', chat_id);
         onCloseStartChat();
         fetchChats();
-        navigation.navigate('ChatWindow',  { chatId: chat_id });
+        navigation.navigate('ChatWindow', { chatId: chat_id });
       } else {
-        // Handle other response statuses as needed
         console.log('Failed to create chat');
       }
     } catch (error) {
@@ -70,7 +67,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 8,
     paddingLeft: 8,
-    color: 'black',
+    color: 'white',
+    backgroundColor: '#5F9E8F',
     borderColor: '#7FFFD4',
   },
   button: {

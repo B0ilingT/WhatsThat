@@ -1,16 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, Button, TextInput } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, Button, TextInput, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { useRoute } from '@react-navigation/native';
 
 const Contacts = ({ navigation }) => {
   const [contactData, setContactData] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const route = useRoute();
+  const { userId } = route.params;
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const fadeAnimation = useRef(new Animated.Value(1)).current;
 
+  const fadeOutMessages = useCallback(() => {
+    Animated.timing(fadeAnimation, {
+      toValue: 0,
+      duration: 1500,
+      useNativeDriver: false,
+    }).start(() => {
+      setSuccessMessage('');
+      setErrorMessage('');
+      fadeAnimation.setValue(1);
+    });
+  }, [fadeAnimation]);
 
   useEffect(() => {
-    fetchContactData(); //flashing error
-  },[]);
+    fetchContactData();
+  }, []);
 
   const fetchContactData = async () => {
     try {
@@ -24,49 +41,23 @@ const Contacts = ({ navigation }) => {
 
       if (response.status === 200) {
         const data = await response.json();
-        setContactData(data);
-        fetchBlockedContacts();
+        const formattedResults = data.map((item) => ({
+          user_id: item.user_id,
+          first_name: item.first_name,
+          last_name: item.last_name,
+          email: item.email,
+        }));
+        setContactData(formattedResults);
       } else {
         console.log('Failed to fetch contact data');
+        setErrorMessage('Failed to fetch contact data.');
       }
     } catch (error) {
       console.error('Error occurred:', error);
+      setErrorMessage('An Unhandled Error occured please try again later');
     }
+    fadeOutMessages();
   };
-
-  const fetchBlockedContacts = async () => {
-    try {
-      const sessionToken = await AsyncStorage.getItem('session_token');
-      const response = await fetch('http://localhost:3333/api/1.0.0/blocked', {
-        headers: {
-          'X-Authorization': sessionToken,
-        },
-      });
-
-      if (response.status === 200) {
-        const blockedContacts = await response.json();
-
-        const newArray = contactData.filter(item => !blockedContacts.includes(item)).concat(blockedContacts.filter(item => !contactData.includes(item)));
-
-        console.log(newArray);
-        setContactData(newArray);
-      } else {
-        console.log('Failed to fetch blocked contacts');
-      }
-    } catch (error) {
-      console.error('Error occurred:', error);
-    }
-  };
-
-  // const filterBlockedContacts = (contacts, blockedContacts) => {
-  //   const filteredContacts = contacts.filter((contact) => {
-  //     const isBlocked = blockedContacts.some((blockedContact) => blockedContact.user_id === contact.user_id);
-  //     return !isBlocked;
-  //   });
-
-  //   setContactData(filteredContacts);
-  // };
-
 
   const handleSearch = async () => {
     try {
@@ -89,20 +80,20 @@ const Contacts = ({ navigation }) => {
 
       if (response.status === 200) {
         const data = await response.json();
-
         const formattedResults = data.map((item) => ({
-          id: item.user_id,
+          user_id: item.user_id,
           first_name: item.given_name,
           last_name: item.family_name,
           email: item.email,
         }));
-
         setContactData(formattedResults);
       } else {
         console.log('Failed to fetch search results');
+        setErrorMessage('Failed to fetch search results.');
       }
     } catch (error) {
       console.error('Error occurred:', error);
+      setErrorMessage('An Unhandled Error occured please try again later');
     }
   };
 
@@ -123,18 +114,23 @@ const Contacts = ({ navigation }) => {
       if (response.status === 200) {
         console.log('Contact removed successfully');
         fetchContactData();
-        // Perform any additional actions or updates after removing the contact
+        setSuccessMessage('Contact removed successfully.');
       } else if (response.status === 400) {
         console.log("You can't remove yourself as a contact");
+        setErrorMessage('You cannot add yourself as a contact.');
       } else if (response.status === 401) {
         console.log('Unauthorized');
+        setErrorMessage('Unauthorized.');
       } else if (response.status === 404) {
         console.log('User not found');
+        setErrorMessage('User not found.');
       } else {
+        setErrorMessage('An Server occured please try again later');
         console.log('Server error');
       }
     } catch (error) {
       console.error('Error occurred:', error);
+      setErrorMessage('An Unhandled Error occured please try again later');
     }
   };
 
@@ -153,25 +149,32 @@ const Contacts = ({ navigation }) => {
       });
 
       if (response.status === 200) {
-        console.log('Contact blocked successfully');
-        //handleRemoveContact(userId);
+        console.log('Contact blocked successfully');       
+        fetchContactData();
+        setSuccessMessage('Contact blocked successfully.');
       } else if (response.status === 400) {
         console.log("You can't block yourself");
+        setErrorMessage('You cannot block yourself.');
       } else if (response.status === 401) {
         console.log('Unauthorized');
+        setErrorMessage('Unauthorized.');
       } else if (response.status === 404) {
         console.log('User not found');
+        setErrorMessage('User not found.');
       } else {
         console.log('Server error');
+        setErrorMessage('A Server error occured. Please try again later.');
       }
     } catch (error) {
       console.error('Error occurred:', error);
+      setErrorMessage('An Unhandled Error occured. Please try again later');
     }
+    
   };
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // Fetch chat data when the component is re-rendered
       fetchContactData();
+      fadeOutMessages();
     });
 
     return unsubscribe;
@@ -189,7 +192,9 @@ const Contacts = ({ navigation }) => {
       <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveContact(item.user_id)}>
         <Icon name="trash" size={20} color="white" />
       </TouchableOpacity>
-      <Text style={styles.contactName}>{item.first_name} {item.last_name}</Text>
+      <Text style={styles.contactName} key={item.user_id}>
+        {`${item.first_name} ${item.last_name}`}
+      </Text>
       <Text style={styles.contactEmail}>{item.email}</Text>
       <TouchableOpacity style={styles.blockButton} onPress={() => handleBlockContact(item.user_id)}>
         <Icon name="ban" size={20} color="white" />
@@ -230,17 +235,27 @@ const Contacts = ({ navigation }) => {
           <Button title="Add a Contact" onPress={navigateToAddContact} />
         </View>
       )}
+      {successMessage ? (
+        <Animated.View style={[styles.successMessage, { opacity: fadeAnimation }]}>
+          <Text style={styles.messageText}>{successMessage}</Text>
+        </Animated.View>
+      ) : null}
+      {errorMessage ? (
+        <Animated.View style={[styles.errorMessage, { opacity: fadeAnimation }]}>
+          <Text style={styles.messageText}>{errorMessage}</Text>
+        </Animated.View>
+      ) : null}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Profile')}>
-          <Text style={styles.bottomBarButtonText}>Profile</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Profile', { userId: userId })}>
+          <Icon name="user" size={24} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Chats')}>
-          <Text style={styles.bottomBarButtonText}>Chats</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Chats' , { userId: userId })}>
+          <Icon name="inbox" size={24} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Contacts')}>
-          <Text style={styles.bottomBarButtonText}>Contacts</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Contacts', { userId: userId })}>
+          <Icon name="users" size={24} color="white" />
         </TouchableOpacity>
-      </View>
+      </View>      
     </View>
   );
 };
@@ -303,10 +318,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     position: 'relative',
+    color: '#777',
   },
   contactName: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#777',
   },
   contactEmail: {
     fontSize: 14,
@@ -377,6 +394,23 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  successMessage: {
+    backgroundColor: '#5F9E8F',
+    padding: 8,
+    marginTop: 16,
+    borderRadius: 10,
+  },
+  errorMessage: {
+    backgroundColor: 'red',
+    padding: 8,
+    marginTop: 16,
+    borderRadius: 10,
+  },
+  messageText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 
 });

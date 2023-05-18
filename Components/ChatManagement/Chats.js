@@ -3,10 +3,14 @@ import { StyleSheet, View, Text, TouchableOpacity, FlatList } from 'react-native
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StartChat from './StartChat';
+import { FontAwesome } from '@expo/vector-icons';
+import { useRoute } from '@react-navigation/native';
 
 const Chats = ({ navigation }) => {
   const [chats, setChats] = useState([]);
   const [showStartChat, setShowStartChat] = useState(false);
+  const route = useRoute();
+  const { userId } = route.params;
 
   useEffect(() => {
     fetchChats();
@@ -40,9 +44,9 @@ const Chats = ({ navigation }) => {
   };
 
   const handleChatPress = (chat) => {
-    navigation.navigate('ChatWindow', { chatId: chat.chat_id, onChatNameUpdate: handleChatNameUpdate });
+    navigation.navigate('ChatWindow', {userId: userId, chatId: chat.chat_id, onChatNameUpdate: handleChatNameUpdate });
   };
-  
+
 
   const handleCloseStartChat = () => {
     setShowStartChat(false);
@@ -55,7 +59,7 @@ const Chats = ({ navigation }) => {
           <View style={styles.startChatHeader}>
             <Text style={styles.startChatTitle}>Start a Chat</Text>
             <TouchableOpacity onPress={handleCloseStartChat}>
-              <Text style={styles.closeButton}>X</Text>              
+              <Text style={styles.closeButton}>X</Text>
             </TouchableOpacity>
           </View>
           <StartChat onCloseStartChat={handleCloseStartChat} fetchChats={fetchChats} navigation={navigation} />
@@ -82,14 +86,14 @@ const Chats = ({ navigation }) => {
         )}
       </View>
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Profile')}>
-          <Text style={styles.bottomBarButtonText}>Profile</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Profile', { userId: userId })}>
+          <FontAwesome name="user" size={24} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Chats')}>
-          <Text style={styles.bottomBarButtonText}>Chats</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Chats', { userId: userId })}>
+          <FontAwesome name="inbox" size={24} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Contacts')}>
-          <Text style={styles.bottomBarButtonText}>Contacts</Text>
+        <TouchableOpacity style={styles.bottomBarButton} onPress={() => navigation.navigate('Contacts', { userId: userId })}>
+          <FontAwesome name="users" size={24} color="white" />
         </TouchableOpacity>
       </View>
     </View>
@@ -113,8 +117,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: 'white',
-    borderRadius: 8, // Rounded corners
-    margin: 8, // Add some margin to create spacing from the red background
+    borderRadius: 8, 
+    margin: 8, 
   },
   startChatHeader: {
     flexDirection: 'row',
@@ -149,8 +153,8 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 76,
     backgroundColor: 'white',
-    borderRadius: 8, // Rounded corners
-    margin: 8, // Add some margin to create spacing from the red background
+    borderRadius: 8, 
+    margin: 8, 
   },
   chatItem: {
     backgroundColor: '#f2f2f2',
@@ -177,7 +181,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#ccc',
     justifyContent: 'space-around',
     alignItems: 'center',
-    borderTopLeftRadius: 50, 
+    borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
     overflow: 'hidden',
   },

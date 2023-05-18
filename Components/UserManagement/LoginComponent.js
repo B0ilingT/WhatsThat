@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView, Animated } from 'react-native';
 import * as EmailValidator from 'email-validator';
@@ -8,21 +8,36 @@ class LoginComponent extends Component {
   state = {
     email: '',
     password: '',
+    message:'',
     showSuccessMessage: false,
+    showErrorMessage: false,
   };
 
   fadeOutSuccessMessage = () => {
-    Animated.timing(this.fadeAnimation, {
-      toValue: 0,
-      duration: 500,
-      useNativeDriver: true,
-    }).start(() => {
-      this.setState({ showSuccessMessage: false });
-    });
+    setTimeout(() => {
+      Animated.timing(this.fadeAnimation, {
+        toValue: 0,
+        duration: 2000,
+        useNativeDriver: false,
+      }).start(() => {
+        this.setState({ showSuccessMessage: false });
+      });
+    }, 3000);
+  };
+  
+  fadeOutErrorMessage = () => {
+    setTimeout(() => {
+      Animated.timing(this.fadeAnimation, {
+        toValue: 0,
+        duration: 3000,
+        useNativeDriver: false,
+      }).start(() => {
+        this.setState({ showErrorMessage: false });
+      });
+    }, 3000);
   };
 
-  handleLogin = async () => 
-  {
+  handleLogin = async () => {
     const { email, password } = this.state;
 
     if (!email || !password) {
@@ -35,53 +50,54 @@ class LoginComponent extends Component {
       return;
     }
 
-    const response = await fetch('http://localhost:3333/api/1.0.0/login', 
-    {
-      method: 'POST',
-      headers: 
+    const response = await fetch('http://localhost:3333/api/1.0.0/login',
       {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email,
-        password: password,
-      }),
-    });
+        method: 'POST',
+        headers:
+        {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
     console.log('Response:', response);
-    if (response.status === 200) 
-    {
+    if (response.status === 200) {
       console.log('Logged in successfully');
       const data = await response.json();
       const { id, token } = data;
 
       console.log('Session token stored:', token);
-        // Store the session token using AsyncStorage
-        await AsyncStorage.setItem('session_token', token)  
-        await AsyncStorage.setItem('user_id', id)        
+      await AsyncStorage.setItem('session_token', token)
+      await AsyncStorage.setItem('user_id', id)
         .then(() => {
           this.setState({ showSuccessMessage: true });
-          this.fadeOutSuccessMessage();
         })
         .catch((error) => {
           console.error('AsyncStorage error:', error);
           Alert.alert('Error', 'An error occurred while storing the session token.');
         });
-        this.setState({ showSuccessMessage: true });
-        this.fadeOutSuccessMessage();
-        this.props.navigation.navigate('Chats');
-    } 
-    else if (response.status === 400) 
-    {
+      this.setState({ showSuccessMessage: true });
+      this.fadeOutSuccessMessage();
+      this.props.navigation.navigate('Chats' , { userId: id });
+    }
+    else if (response.status === 400) {
       Alert.alert('Error', 'Incorrect Email/Password. Bad request.');
-    } 
-    else if (response.status === 500) 
-    {
+      this.setState({message: 'Incorrect Email/Password'});
+      this.setState({ showErrorMessage: true });
+    }
+    else if (response.status === 500) {
       Alert.alert('Error', 'An error occurred on the server. Please try again later.');
+      this.setState({ message: 'Server Error, we apologize for the inconvenience' });
+      this.setState({ showErrorMessage: true });
     }
-    else 
-    {
+    else {
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      this.setState({ message: 'An Unexpected Error occurred. Please try again' });
+      this.setState({ showErrorMessage: true });
     }
+    this.fadeOutErrorMessage();
   };
 
   render() {
@@ -89,10 +105,15 @@ class LoginComponent extends Component {
       <ScrollView contentContainerStyle={styles.container}>
         {this.state.showSuccessMessage && (
           <Animated.View style={[styles.successMessage, { opacity: this.fadeAnimation }]}>
-            <Text style={styles.successMessageText}>Logged in successfully!</Text>
+            <Text style={styles.successMessageText}>Successfully Logged In!</Text>
           </Animated.View>
         )}
-        <Text style={styles.heading}>Login</Text>
+        {this.state.showErrorMessage && (
+          <Animated.View style={[styles.errorMessage, { opacity: this.fadeAnimation }]}>
+            <Text style={styles.errorMessageText}>{this.state.message}</Text>
+          </Animated.View>
+        )}
+        <Text style={styles.title}>WhatsThat?</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -126,6 +147,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: 'white',
   },
+  title: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: 'white',
+  },
   input: {
     width: '100%',
     height: 40,
@@ -152,12 +179,23 @@ const styles = StyleSheet.create({
     padding: 8,
     marginTop: 16,
     borderRadius: 4,
-  }, 
-    successMessageText: {
-        color: 'white',
-        textAlign: 'center',
-        fontWeight: 'bold',
-      },
-    });
-    
-    export default LoginComponent;
+  },
+  successMessageText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  errorMessage: {
+    backgroundColor: 'red',
+    padding: 8,
+    marginTop: 16,
+    borderRadius: 4,
+  },
+  errorMessageText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+});
+
+export default LoginComponent;

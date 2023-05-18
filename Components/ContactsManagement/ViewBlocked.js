@@ -1,10 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, FlatList } from 'react-native';
+import React, { useEffect, useState , useCallback, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, Animated} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ViewBlocked = () => {
   const [blockedContacts, setBlockedContacts] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const fadeAnimation = useRef(new Animated.Value(1)).current;
+
+  const fadeOutMessages = useCallback(() => {
+    Animated.timing(fadeAnimation, {
+      toValue: 0,
+      duration: 1500,
+      useNativeDriver: false,
+    }).start(() => {
+      setSuccessMessage('');
+      setErrorMessage('');
+      fadeAnimation.setValue(1);
+    });
+  }, [fadeAnimation]);
 
   useEffect(() => {
     fetchBlockedContacts();
@@ -25,10 +40,13 @@ const ViewBlocked = () => {
         setBlockedContacts(data);
       } else {
         console.log('Failed to fetch blocked contacts');
+        setErrorMessage('Failed to fetch blocked contacts');
       }
     } catch (error) {
       console.error('Error occurred:', error);
+      setErrorMessage('An Unhandled Error occured please try again later');
     }
+    fadeOutMessages();
   };
 
   const handleUnblockContact = async (userId) => {
@@ -46,6 +64,7 @@ const ViewBlocked = () => {
 
       if (response.status === 200) {
         console.log('Contact unblocked successfully');
+        setSuccessMessage('Contact unblocked successfully');
         fetchBlockedContacts();
       } else {
         console.log('Failed to unblock contact');
@@ -82,6 +101,16 @@ const ViewBlocked = () => {
           <Text style={styles.noBlockedContactsText}>No blocked contacts.</Text>
         </View>
       )}
+      {successMessage ? (
+        <Animated.View style={[styles.successMessage, { opacity: fadeAnimation }]}>
+          <Text style={styles.messageText}>{successMessage}</Text>
+        </Animated.View>
+      ) : null}
+      {errorMessage ? (
+        <Animated.View style={[styles.errorMessage, { opacity: fadeAnimation }]}>
+          <Text style={styles.messageText}>{errorMessage}</Text>
+        </Animated.View>
+      ) : null}
     </View>
   );
 };
@@ -135,6 +164,24 @@ const styles = StyleSheet.create({
   },
   noBlockedContactsText: {
     fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  successMessage: {
+    backgroundColor: '#5F9E8F',
+    padding: 8,
+    marginTop: 16,
+    borderRadius: 10,
+  },
+  errorMessage: {
+    backgroundColor: 'red',
+    padding: 8,
+    marginTop: 16,
+    borderRadius: 10,
+  },
+  messageText: {
+    color: 'white',
+    textAlign: 'center',
     fontWeight: 'bold',
   },
 });

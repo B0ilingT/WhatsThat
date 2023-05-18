@@ -11,10 +11,9 @@ class SignupComponent extends Component {
     password: '',
   };
 
-  handleSignup = async () => 
-  {
+  handleSignup = async () => {
     const { firstName, lastName, email, password } = this.state;
-    
+
     if (!firstName || !lastName || !email || !password) {
       Alert.alert('Error', 'Please fill in all the fields');
       return;
@@ -25,11 +24,10 @@ class SignupComponent extends Component {
       return;
     }
 
-    // Password criteria check
     if (!/(?=.*[A-Z])/.test(password) ||
-        !/(?=.*[a-z])/.test(password) ||
-        !/(?=.*[0-9])/.test(password) ||
-        !/(?=.*[^A-Za-z0-9])/.test(password)) {
+      !/(?=.*[a-z])/.test(password) ||
+      !/(?=.*[0-9])/.test(password) ||
+      !/(?=.*[^A-Za-z0-9])/.test(password)) {
       Alert.alert(
         'Error',
         'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character'
@@ -37,21 +35,21 @@ class SignupComponent extends Component {
       return;
     }
 
-    const response = await fetch('http://localhost:3333/api/1.0.0/user', 
-    {
-      method: 'POST',
-      headers: 
+    const response = await fetch('http://localhost:3333/api/1.0.0/user',
       {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify
-      ({
-        first_name: firstName,
-        last_name: lastName,
-        email: email,
-        password: password,
-      }),
-    });
+        method: 'POST',
+        headers:
+        {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify
+          ({
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            password: password,
+          }),
+      });
 
     if (response.status === 201) {
       console.log('User created successfully');
